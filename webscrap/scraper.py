@@ -23,3 +23,17 @@ for nextSibling in ultima_pagina.find_next_siblings():
  #   print(item.text.encode("utf-8"))
 ultima_pagina_index  = len(uls) - 2
 print(uls[ultima_pagina_index])
+
+lista_produtos = soup.find_all('li', class_='span3')
+nomes = lista_produtos[0].find('a', class_='nome-produto cor-secundaria').get_text().strip()
+#nome = nomes.find('a', class_='nome-produto cor-secundaria').get_text().strip()
+
+links = lista_produtos[0].find_all("a", class_='produto-sobrepor') 
+for link in links:
+  print("Link:", link.get("href"), "Text:", link.string)
+
+
+print('=============')
+
+print(lista_produtos[4].find("a", class_='produto-sobrepor').get("href"), ' ', lista_produtos[4].find('a', class_='nome-produto cor-secundaria').get_text().strip())
+
