@@ -1,7 +1,10 @@
 import os
+from datetime import datetime
 import requests
 from bs4 import BeautifulSoup
 from PIL import Image
+
+today = datetime.now()
 
 url = 'https://www.piscaled.com.br/eletronica'
 headers = {'User-Agent': "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36"}
@@ -23,22 +26,29 @@ for nextSibling in ultima_pagina.find_next_siblings():
 ultima_pagina_index  = len(uls) - 2
 
 def criar_pasta(nome):
-   pasta_main = 'produtos/'
+   pasta_main = '../produtos/'
    if(not os.path.exists(pasta_main)):
       os.mkdir(pasta_main)
-   if(not os.path.exists('produtos/{nome}/')):
+   if(not os.path.exists('../produtos/{nome}/')):
       try:
          os.mkdir(os.path.join(pasta_main, nome))
-         img_path = 'produtos/' + nome
+         img_path = '../produtos/' + nome
          os.mkdir(os.path.join(img_path, 'images'))
       except:
          print('Folder alreade exist')
 
-def save_data(data_, prod_path):
-      path = ''
-      with open (prod_path, 'a', newline='', encoding='UTF-8') as f:
-       f.write(data_)
- 
+def save_data(data_, prod_path, desc, prod_path_desc):
+      cabecalho = 'Data;Nome;SKU;Preço;Estoque;Link' + '\n'
+      if(not os.path.exists(prod_path_desc)):
+         with open (prod_path_desc, 'a', newline='', encoding='UTF-8') as f:
+            f.write(desc)
+      if(not os.path.exists(prod_path)):
+         with open (prod_path, 'a', newline='', encoding='UTF-8') as f:
+            f.write(cabecalho)
+            f.write(data_)
+      else:
+         with open (prod_path, 'a', newline='', encoding='UTF-8') as f:
+            f.write(data_)
    
 # Pegar link de todos os produtos 
 lista_Links = []
@@ -67,6 +77,12 @@ for lin in lista_Links:
     prod_code = soup.find(attrs={'itemprop':'sku'}).get_text().strip()
     prod_price = 0
     prod_estoque = 0
+    prod_desc = 'ND'
+
+    try:
+       prod_desc = soup.find(id='descricao').get_text().strip()
+    except:
+       prod_desc = 'ND'
     
     prod_folder = prod_code + '/'
     criar_pasta(prod_folder)
@@ -79,18 +95,21 @@ for lin in lista_Links:
        prod_price = 'nd'
        prod_estoque = 0
 
-    prd_data = prod_name + ';' + prod_code + ';' + prod_price + ';' + str(prod_estoque) + ';' + lista_Links[index] + '\n'
-    prod_path = 'produtos/' + prod_code + '/' + prod_code
-    save_data(prd_data, prod_path)
+    dt_string = today.strftime("%d/%m/%Y %H:%M:%S")
+    prd_data = dt_string + ';' + prod_name + ';' + prod_code + ';' + prod_price + ';' + str(prod_estoque) + ';' + lista_Links[index] + '\n'
+    prod_path = '../produtos/' + prod_code + '/' + prod_code
+    _desc = prod_code + '_desc'
+    prod_path_desc = '../produtos/' + prod_code + '/' + _desc
+    
+    save_data(prd_data, prod_path, prod_desc, prod_path_desc)
 
     aux = 1
     for tag in soup():
       if 'data-imagem-grande' in tag.attrs:
         image_url = tag.get("data-imagem-grande")
-        #img.save('/absolute/path/to/myphoto.jpg', 'JPEG')
         img = Image.open(requests.get(image_url, stream = True).raw)
         img_name = tag.get("title") + '.jpg'
-        img_path = 'produtos/' + prod_code + '/images/' + prod_code + str(aux) + '.jpg'
+        img_path = '../produtos/' + prod_code + '/images/' + prod_code + str(aux) + '.jpg'
         try:
            if(not os.path.exists(img_path)):
             img.save(img_path, 'JPEG')
@@ -101,3 +120,6 @@ for lin in lista_Links:
         
 
     index = index + 50
+
+def print_text(text):
+   print(text)
