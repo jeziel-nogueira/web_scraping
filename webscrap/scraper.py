@@ -72,7 +72,6 @@ def criar_pasta(nome):
 
 def save_data(data_, prod_path, desc, prod_path_desc):
       cabecalho = 'Data;Nome;SKU;Preço;Estoque;Link' + '\n'
-      flag_new = 'true'
       flag_path = prod_path + '_flag'
       flag_title = 'new'
          
@@ -88,6 +87,24 @@ def save_data(data_, prod_path, desc, prod_path_desc):
       else:
          with open (prod_path, 'a', newline='', encoding='UTF-8') as f:
             f.write(data_)
+def update_estoque(prod_path, val):
+   path = prod_path + 'estoque_reg'
+   if(not os.path.exists(path)):
+      with open (path, 'a', newline='', encoding='UTF-8') as f:
+         f.write('Estoque' + '\n')
+         f.write(str(val))
+   else:
+      with open (path, 'a', newline='', encoding='UTF-8') as f:
+            f.write(str(val))
+def update_preco(prod_path, val):
+   path = prod_path + 'preco_reg'
+   if(not os.path.exists(path)):
+      with open (path, 'a', newline='', encoding='UTF-8') as f:
+         f.write('Preco' + '\n')
+         f.write(str(val))
+   else:
+      with open (path, 'a', newline='', encoding='UTF-8') as f:
+            f.write(str(val))
    
 def prod_images(link_, prod_code):
    site = requests.get(link_, headers=headers)
@@ -99,13 +116,24 @@ def prod_images(link_, prod_code):
         img = Image.open(requests.get(image_url, stream = True).raw)
         img_name = tag.get("title") + '.jpg'
         img_path = root_path + 'produtos/' + prod_code + '/images/' + prod_code + str(img_Index) + '.jpg'
+        img_error = False
         try:
            if(not os.path.exists(img_path)):
             img.save(img_path, 'JPEG')
         except:
+           img_error = True
            print('Error on save img: ', img_name)
-           print('Error details: ', prd_data)
-        img_Index = img_Index + 1
+        if img_error:
+            img_name = tag.get("title") + '.png'
+            img_path = root_path + 'produtos/' + prod_code + '/images/' + prod_code + str(img_Index) + '.png'
+            try:
+               if(not os.path.exists(img_path)):
+                  img.save(img_path, 'PNG')
+                  print('IMG Save: ', img_path)
+            except:
+               print('Error on save img PNG: ', img_name)
+      img_Index = img_Index + 1
+           
 
 def get_prod_estoque(link_):
    val = 0
@@ -132,20 +160,18 @@ def get_prod_preco(link_):
 
 
 #percorrer lista de links de produtos e coletar dados
-
 def load_data():
    buscar_novos_prdutos()
-   index = 0
    for lin in lista_Links:
-      url_pagina = lista_Links[index]
+      url_pagina = lin
       site = requests.get(url_pagina, headers=headers)
       soup = BeautifulSoup(site.content, 'html.parser')
 
 
       prod_name = soup.find('h1').get_text().strip()
       prod_code = soup.find(attrs={'itemprop':'sku'}).get_text().strip()
-      prod_price = get_prod_preco(lista_Links[index])
-      prod_estoque = get_prod_estoque(lista_Links[index])
+      prod_price = get_prod_preco(lin)
+      prod_estoque = get_prod_estoque(lin)
       prod_desc = 'ND'
 
       try:
@@ -158,7 +184,7 @@ def load_data():
 
       #salvar dados do produto
       dt_string = today.strftime("%d/%m/%Y %H:%M:%S")
-      prd_data = dt_string + ';' + prod_name + ';' + prod_code + ';' + prod_price + ';' + str(prod_estoque) + ';' + lista_Links[index] + '\n'
+      prd_data = dt_string + ';' + prod_name + ';' + prod_code + ';' + prod_price + ';' + str(prod_estoque) + ';' + lin + '\n'
       prod_path = root_path + 'produtos/' + prod_code + '/' + prod_code
       _desc = prod_code + '_desc'
       prod_path_desc = root_path + 'produtos/' + prod_code + '/' + _desc
@@ -166,10 +192,7 @@ def load_data():
       save_data(prd_data, prod_path, prod_desc, prod_path_desc)
 
       # salvar imagens do produto
-      prod_images(lista_Links[index], prod_code)
-      index = index + 50
-      if(index >= 350):
-         break
+      prod_images(lin, prod_code)
 
 
 
